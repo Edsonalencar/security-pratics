@@ -1,9 +1,13 @@
+package utils;
+
 import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
+import java.security.MessageDigest;
 import java.security.SecureRandom;
+import java.util.Arrays;
 import java.util.Base64;
 
 public class ImplAES {
@@ -40,6 +44,20 @@ public class ImplAES {
         cipher.init(Cipher.DECRYPT_MODE, keySpec, ivSpec);
         byte[] original = cipher.doFinal(ciphertext);
         return new String(original, "UTF-8");
+    }
+
+    public static SecretKey deriveAESKey(String passphrase) {
+        try {
+            byte[] keyBytes = passphrase.getBytes("UTF-8");
+            MessageDigest sha = MessageDigest.getInstance("SHA-256");
+            keyBytes = sha.digest(keyBytes);
+            // Pega os primeiros 32 bytes (256 bits) para a chave AES
+            keyBytes = Arrays.copyOf(keyBytes, 32);
+
+            return new SecretKeySpec(keyBytes, "AES");
+        } catch (Exception e) {
+            throw new RuntimeException("Erro ao derivar a chave AES.", e);
+        }
     }
 
     public static String bytesToBase64(byte[] data) {

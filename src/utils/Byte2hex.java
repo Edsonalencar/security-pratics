@@ -1,3 +1,5 @@
+package utils;
+
 public class Byte2hex {
 
     public static String handler (byte[] bytes) {
