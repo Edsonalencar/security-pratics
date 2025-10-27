@@ -6,7 +6,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
 public class ImplMD5 {
-    static final Charset UTF_8 = StandardCharsets.UTF_8;
+    public static final Charset UTF_8 = StandardCharsets.UTF_8;
 
     public static byte[] handler (byte[] bytesEntrada, String alg) {
         MessageDigest md = null;

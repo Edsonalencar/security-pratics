@@ -8,7 +8,7 @@ import javax.crypto.SecretKey;
 public class SecurityManager {
 
     private static final SecretKey SECRET_KEY = ImplAES.deriveAESKey("Ufersa_Seguranca_2025_Pratica_Off1");
-    public static final String HMAC_KEY = "CHAVE_SECRETA_HMAC_1234567890";
+    public static String HMAC_KEY = "CHAVE_SECRETA_HMAC_1234567890";
 
     public static SecureMessage createSecuredRequest(SecureMessageCommand command, String resourceName, String newAddress) throws Exception {
         String originalMessage = command + "|" + resourceName + "|" + (newAddress != null ? newAddress : "null");
