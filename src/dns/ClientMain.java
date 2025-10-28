@@ -1,7 +1,5 @@
-package teste;
+package dns;
 
-import dns.Client;
-import dns.MiniDNSServer;
 import message.SecureMessage;
 import message.SecureMessageCommand;
 
