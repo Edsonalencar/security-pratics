@@ -101,30 +101,35 @@ public class MiniDNSServer {
         public void run() {
             activeRequesters.add(this);
 
-            try {
-                while (true) {
-                    SecureMessage request = (SecureMessage) in.readObject();
-                    String originalMessageContent = SecurityManager.processSecuredMessage(request); // Valida se a mensagem é valida
+            boolean keepConnectionOpen = false;
 
-                    if (request.getCommand() == SecureMessageCommand.GET) {
-                        handleConsult(request);
-                    } else if (request.getCommand() == SecureMessageCommand.UPDATE) {
-                        handleUpdate(request);
-                        break;
-                    } else {
-                        System.err.println("Command invalido: "+request.getCommand());
-                        break;
-                    }
+            try {
+                SecureMessage request = (SecureMessage) in.readObject();
+                String originalMessageContent = SecurityManager.processSecuredMessage(request); // Valida se a mensagem é valida
+
+                if (request.getCommand() == SecureMessageCommand.GET) {
+                    handleConsult(request);
+                    keepConnectionOpen = true;
+                } else if (request.getCommand() == SecureMessageCommand.UPDATE) {
+                    handleUpdate(request);
+                } else {
+                    System.err.println("Command invalido: " + request.getCommand());
                 }
             } catch (SecurityException e) {
                 System.err.println("[CLIENT HANDLER] MENSAGEM DESCARTADA (Segurança): " + e.getMessage());
+                keepConnectionOpen = false;
             } catch (EOFException e) {
-                System.out.println("[CLIENT HANDLER] Cliente encerrou a conexão.");
+                System.out.println("[CLIENT HANDLER] Cliente encerrou a conexão inesperadamente.");
+                keepConnectionOpen = false;
             } catch (Exception e) {
                 System.err.println("[CLIENT HANDLER] Erro de comunicação ou desserialização: " + e.getMessage());
+                keepConnectionOpen = false;
             } finally {
-                activeRequesters.remove(this);
-                closeConnection();
+                if (!keepConnectionOpen) {
+                    System.out.println("[CLIENT HANDLER] Fechando conexão e removendo da lista.");
+                    activeRequesters.remove(this);
+                    closeConnection();
+                }
             }
         }
 
