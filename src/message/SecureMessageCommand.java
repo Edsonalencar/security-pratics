@@ -1,5 +1,5 @@
 package message;
 
 public enum SecureMessageCommand {
-    GET, UPDATE, RESPONSE, NOTIFY
+    GET, UPDATE, REGISTER, RESPONSE, NOTIFY, EXECUTE
 }
