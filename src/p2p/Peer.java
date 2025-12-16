@@ -10,7 +10,7 @@ import java.net.Socket;
 
 public class Peer {
 
-    private static final int BASE_PORT = 12400; // Porta inicial para P0
+    private static final int BASE_PORT = 12400;
     private final int id;
     private final int port;
     private final int successorId;
@@ -45,20 +45,23 @@ public class Peer {
 
     private class PeerHandler implements Runnable {
         private final Socket socket;
-        private final ObjectInputStream in;
-
-        private final ObjectOutputStream out;
         private final SearchClient searchClient = new SearchClient();
 
         public PeerHandler(Socket socket) throws IOException {
             this.socket = socket;
-            this.out = new ObjectOutputStream(socket.getOutputStream());
-            this.in = new ObjectInputStream(socket.getInputStream());
+            // No PeerHandler (lado Servidor/Receptor), não criamos ObjectInputStream
+            // no construtor para evitar deadlocks de serialização na inicialização.
         }
 
         @Override
         public void run() {
+            ObjectInputStream in = null;
+
             try {
+                // CORREÇÃO CRÍTICA: Cria o IN dentro do bloco try para garantir que ele seja
+                // criado APENAS APÓS a conexão estar estabelecida e pronta para receber o objeto.
+                in = new ObjectInputStream(socket.getInputStream());
+
                 SecureMessage request = (SecureMessage) in.readObject();
                 String originalContent = SecurityManager.processSecuredMessage(request);
 
@@ -71,39 +74,39 @@ public class Peer {
             } catch (SecurityException e) {
                 System.err.println(String.format("[P%d - HANDLER] MENSAGEM DESCARTADA (Segurança): %s", Peer.this.id, e.getMessage()));
             } catch (Exception e) {
+                // Se a desserialização falhar aqui, o erro 'd != java.lang.String' será pego.
                 System.err.println(String.format("[P%d - HANDLER] Erro de comunicação/desserialização: %s", Peer.this.id, e.getMessage()));
             } finally {
                 try {
+                    if (in != null) in.close();
                     socket.close();
                 } catch (IOException ignored) {}
             }
         }
 
         private void handleSearch(SecureMessage request, String originalContent) throws Exception {
-            // Conteúdo da busca: SEARCH|OriginPeerID|FileNumber
             String[] parts = originalContent.split("\\|");
             int originId = Integer.parseInt(parts[1]);
             int fileNumber = Integer.parseInt(parts[2]);
             String fileName = "arquivo" + fileNumber;
 
-            System.out.println(String.format("[P%d] Recebeu busca por %s (Origin P%d) via P%d", id, fileName, originId, request.getResourceName()));
+            System.out.println(String.format("[P%d] Recebeu busca por %s (Origin P%d) via P%s", Peer.this.id, fileName, originId, request.getResourceName()));
 
             if (isResponsible(fileNumber)) {
-                System.out.println(String.format("[P%d] -> RECURSO ENCONTRADO. Sou o responsável por %s.", id, fileName));
-                searchClient.sendResponseToOrigin(originId, fileNumber, "FOUND", id);
+                System.out.println(String.format("[P%d] -> RECURSO ENCONTRADO. Sou o responsável por %s.", Peer.this.id, fileName));
+                searchClient.sendResponseToOrigin(originId, fileNumber, "FOUND", Peer.this.id);
             } else {
-                System.out.println(String.format("[P%d] -> Repassando busca para P%d...", id, successorId));
-                searchClient.forwardSearch(successorId, originId, fileNumber, id);
+                System.out.println(String.format("[P%d] -> Repassando busca para P%d...", Peer.this.id, Peer.this.successorId));
+                searchClient.forwardSearch(Peer.this.successorId, originId, fileNumber, Peer.this.id);
             }
         }
 
         private void handleResponse(String originalContent) {
-            // Conteúdo da resposta: RESPONSE|FoundFile|Status|ResponsiblePeerId
             String[] parts = originalContent.split("\\|");
             String fileName = parts[1];
             String responsiblePeerId = parts[3];
 
-            System.out.println(String.format("[P%d] Recebeu resposta: %s encontrado em P%s.", id, fileName, responsiblePeerId));
+            System.out.println(String.format("[P%d] Recebeu resposta: %s encontrado em P%s.", Peer.this.id, fileName, responsiblePeerId));
         }
     }
 }
