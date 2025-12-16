@@ -16,19 +16,18 @@ public class P2PClientMain {
 
         // Vetor de configuração dos Peers: ID, Arquivo Inicial, Arquivo Final [cite: 120-125]
         int[][] peerConfigs = {
-                {0, 1, 10},  // P0
-                {1, 11, 20}, // P1
-                {2, 21, 30}, // P2
-                {3, 31, 40}, // P3
-                {4, 41, 50}, // P4
-                {5, 51, 60}  // P5
+            {0, 1, 10},  // P0
+            {1, 11, 20}, // P1
+            {2, 21, 30}, // P2
+            {3, 31, 40}, // P3
+            {4, 41, 50}, // P4
+            {5, 51, 60}  // P5
         };
 
         List<Thread> peerThreads = new ArrayList<>();
 
         // Inicia cada Peer em uma thread separada
         for (int[] config : peerConfigs) {
-            // Criamos o Peer e a Thread
             Peer peerInstance = new Peer(config[0], config[1], config[2]);
             Thread t = new Thread(() -> peerInstance.startServer());
             peerThreads.add(t);
